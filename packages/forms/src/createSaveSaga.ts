@@ -6,12 +6,12 @@ import { Query, Resource, ResourcePostMethods } from 'tg-resources';
 
 import { FormErrorHandlerOptions, formErrorsHandler } from './formErrors';
 import { defaultMessages, ErrorMessages } from './messages';
-import { SaveActionType } from './types';
+import { SaveActionType, SaveSaga } from './types';
 
 
 export interface CreateFormSaveSagaOptions<
-    Values,
     T extends string,
+    Values,
     Klass extends Resource,
     KW extends Kwargs<KW> = {},
     Params extends Kwargs<Params> = {}
@@ -32,10 +32,12 @@ export interface CreateFormSaveSagaOptions<
 
 
 export const createFormSaveSaga = <
-    Values, T extends string, Klass extends Resource,
+    T extends string,
+    Values,
+    Klass extends Resource,
     KW extends Kwargs<KW> = {},
     Params extends Kwargs<Params> = {}
->(options: CreateFormSaveSagaOptions<Values, T, Klass, KW, Params>) => {
+>(options: CreateFormSaveSagaOptions<T, Values, Klass, KW, Params>): SaveSaga<T, Values, KW, Params> => {
     const {
         resource,
         method = 'post',

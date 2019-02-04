@@ -1,4 +1,4 @@
-import { ActionPayload, ActionType, Kwargs } from '@thorgate/create-resource-saga';
+import { ActionPayload, ActionType, Kwargs, ResourceSaga } from '@thorgate/create-resource-saga';
 import { Omit, OptionalMap } from '@thorgate/spa-is';
 import { FormikProps } from 'formik';
 
@@ -18,3 +18,11 @@ export interface SaveAction<T extends string, Values, KW extends Kwargs<KW> = {}
 
     getType?: () => T;
 }
+
+
+export type SaveSaga<
+    T extends string,
+    Values,
+    KW extends Kwargs<KW> = {},
+    Params extends Kwargs<Params> = {}
+> = ResourceSaga<T, SaveMeta<Values>, KW, Params, Values>;

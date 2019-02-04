@@ -1,6 +1,6 @@
 import { isFunction } from '@tg-resources/is';
 import { SagaResource } from '@tg-resources/redux-saga-router';
-import { ActionType, createResourceSaga } from '@thorgate/create-resource-saga';
+import { ActionType, createResourceSaga, Kwargs } from '@thorgate/create-resource-saga';
 import { errorActions } from '@thorgate/spa-errors';
 import { normalize, schema } from 'normalizr';
 import { match } from 'react-router';
@@ -8,36 +8,40 @@ import { call, put } from 'redux-saga/effects';
 import { Query, Resource, ResourceMethods } from 'tg-resources';
 
 import { entitiesActions } from './entitiesReducer';
-import { FetchMeta } from './types';
+import { FetchMeta, FetchSaga } from './types';
 
 
 export type SerializeData = (result: any, listSchema: schema.Entity[]) => ReturnType<typeof normalize>;
 
 
 export interface NormalizedFetchOptions<
-    T extends string, Klass extends Resource, Kwargs extends { [K in keyof Kwargs]?: string | undefined; } = {},
-    Params extends { [K in keyof Params]?: string | undefined; } = {}, Data = any
+    Key extends string,
+    T extends string,
+    Klass extends Resource,
+    KW extends Kwargs<KW> = {},
+    Params extends Kwargs<Params> = {},
+    Data = any
 > {
+    key: Key;
     listSchema: [schema.Entity];
-    key: string;
 
     resource?: Klass | SagaResource<Klass>;
     method?: ResourceMethods;
 
-    apiFetchHook?: (matchObj: match<Params> | null, action: ActionType<T, FetchMeta, Kwargs, Data>) => any;
-    successHook?: (result: any, matchObj: match<Params> | null, action: ActionType<T, FetchMeta, Kwargs, Data>) => any;
+    apiFetchHook?: (matchObj: match<Params> | null, action: ActionType<T, FetchMeta, KW, Data>) => any;
+    successHook?: (result: any, matchObj: match<Params> | null, action: ActionType<T, FetchMeta, KW, Data>) => any;
 
     serializeData?: SerializeData;
 
     timeoutMs?: number;
 
-    mutateKwargs?: (matchObj: match<Params> | null, kwargs: Kwargs | null) => any;
+    mutateKwargs?: (matchObj: match<Params> | null, kwargs: KW | null) => any;
     mutateQuery?: (matchObj: match<Params> | null, query: Query | null) => any;
 }
 
 
-export function* saveResults(
-    key: string,
+export function* saveResults<Key extends string>(
+    key: Key,
     result: any[],
     listSchema: [schema.Entity],
     meta: FetchMeta = {},
@@ -50,8 +54,8 @@ export function* saveResults(
 }
 
 
-export function* saveResult(
-    key: string,
+export function* saveResult<Key extends string>(
+    key: Key,
     result: any,
     detailSchema: schema.Entity,
     meta: FetchMeta = {},
@@ -62,9 +66,13 @@ export function* saveResult(
 
 
 export function createFetchSaga<
-    T extends string, Klass extends Resource, Kwargs extends { [K in keyof Kwargs]?: string | undefined; } = {},
-    Params extends { [K in keyof Params]?: string | undefined; } = {}, Data = any
->(options: NormalizedFetchOptions<T, Klass, Kwargs, Params, Data>) {
+    Key extends string,
+    T extends string,
+    Klass extends Resource,
+    KW extends Kwargs<KW> = {},
+    Params extends Kwargs<Params> = {},
+    Data = any
+>(options: NormalizedFetchOptions<Key, T, Klass, KW, Params, Data>): FetchSaga<T, KW, Params, Data> {
     const {
         key,
         listSchema,
@@ -78,7 +86,7 @@ export function createFetchSaga<
         mutateQuery,
     } = options;
 
-    function* saveHook(response: any, matchObj: match<Params> | null, action: ActionType<T, FetchMeta, Kwargs, Data>) {
+    function* saveHook(response: any, matchObj: match<Params> | null, action: ActionType<T, FetchMeta, KW, Data>) {
         if (action.meta.asDetails) {
             yield call(saveResult, key, response, listSchema[0], action.meta, serializeData);
         } else {
@@ -101,7 +109,7 @@ export function createFetchSaga<
         mutateQuery,
     });
 
-    return function* fetchSaga(matchObj: match<Params> | null, action: ActionType<T, FetchMeta, Kwargs, Data>) {
+    return function* fetchSaga(matchObj: match<Params> | null, action: ActionType<T, FetchMeta, KW, Data>) {
         const { meta = {} } = action;
 
         try {

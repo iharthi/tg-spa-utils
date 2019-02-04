@@ -1,4 +1,4 @@
-import { ActionPayload, ActionType, Kwargs, MetaOptions } from '@thorgate/create-resource-saga';
+import { ActionPayload, ActionType, Kwargs, MetaOptions, ResourceSaga } from '@thorgate/create-resource-saga';
 
 
 export interface FetchMeta extends MetaOptions {
@@ -19,3 +19,11 @@ export interface FetchAction<T extends string, KW extends Kwargs<KW> = {}, Data 
 
     getType?: () => T;
 }
+
+
+export type FetchSaga<
+    T extends string,
+    KW extends Kwargs<KW> = {},
+    Params extends Kwargs<Params> = {},
+    Data = any
+> = ResourceSaga<T, FetchMeta, KW, Params, Data>;

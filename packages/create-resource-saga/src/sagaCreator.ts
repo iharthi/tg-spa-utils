@@ -3,7 +3,7 @@ import { match } from 'react-router';
 import { call, delay, race } from 'redux-saga/effects';
 import { Query, Resource, ResourceMethods } from 'tg-resources';
 
-import { ActionType, Kwargs } from './types';
+import { ActionType, Kwargs, ResourceSaga } from './types';
 
 
 export const DEFAULT_TIMEOUT = 3000;
@@ -38,7 +38,7 @@ export function createResourceSaga<
     KW extends Kwargs<KW> = {},
     Params extends Kwargs<Params> = {},
     Data = any,
->(options: ResourceSagaOptions<T, Klass, Meta, KW, Params, Data>) {
+>(options: ResourceSagaOptions<T, Klass, Meta, KW, Params, Data>): ResourceSaga<T, Meta, KW, Params> {
     const {
         resource,
         method = 'fetch',
@@ -51,7 +51,7 @@ export function createResourceSaga<
     } = options;
 
     return function* resourceSaga(matchObj: match<Params> | null, action: ActionType<T, Meta, KW, Data>) {
-        let fetchEffect: any;
+        let resourceEffect: any;
 
         let { kwargs = null, query = null } = action.payload;
 
@@ -64,7 +64,7 @@ export function createResourceSaga<
         }
 
         if (resource) {
-            fetchEffect = resourceEffectFactory(resource, method, {
+            resourceEffect = resourceEffectFactory(resource, action.payload.method || method, {
                 kwargs,
                 query,
                 data: action.payload.data,
@@ -72,14 +72,14 @@ export function createResourceSaga<
                 requestConfig: { initializeSaga: false }, // Disable initialized saga in this context
             });
         } else if (apiHook) {
-            fetchEffect = call(apiHook, matchObj, action);
+            resourceEffect = call(apiHook, matchObj, action);
         } else {
             throw new Error('Misconfiguration: "resource" or "apiFetchHook" is required');
         }
 
         const { response, timeout } = yield race({
             timeout: delay(timeoutMs, true),
-            response: fetchEffect,
+            response: resourceEffect,
         });
 
         if (timeout) {
